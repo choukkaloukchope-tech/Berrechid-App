@@ -1,0 +1,158 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>دليل برشيد</title>
+  <style>
+    body { font-family: 'Tahoma', sans-serif; margin:0; background:#f8f9fa; }
+    header { background:#0077b6; color:white; padding:1rem; text-align:center; }
+    nav { display:flex; flex-wrap:wrap; background:#0096c7; }
+    nav button { flex:1; padding:0.8rem; border:none; background:#0096c7; color:white; cursor:pointer; }
+    nav button:hover { background:#023e8a; }
+    section { display:none; padding:1rem; }
+    section.active { display:block; }
+    .card { background:white; border-radius:8px; padding:1rem; margin:0.5rem 0; box-shadow:0 2px 5px rgba(0,0,0,0.1); }
+    .chat-widget { position:fixed; bottom:10px; left:10px; width:300px; background:white; border-radius:10px; box-shadow:0 2px 10px rgba(0,0,0,0.2); }
+    #chat-messages { max-height:200px; overflow-y:auto; padding:0.5rem; }
+    #chat-input { width:70%; padding:0.5rem; }
+    .admin-panel input, .admin-panel select { margin:0.3rem 0; padding:0.5rem; width:100%; }
+    .notification { background:#ffd60a; padding:0.5rem; margin:0.5rem 0; border-radius:5px; }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>📌 دليل برشيد</h1>
+    <p>كل ما تحتاجه من صيدليات، سناكات، أطباء، نقل...</p>
+  </header>
+
+  <nav>
+    <button onclick="showSection('pharmacies')">💊 صيدليات</button>
+    <button onclick="showSection('snacks')">🍔 سناكات</button>
+    <button onclick="showSection('shops')">🏪 محلات</button>
+    <button onclick="showSection('doctors')">👨‍⚕️ أطباء</button>
+    <button onclick="showSection('transport')">🚕 النقل</button>
+    <button onclick="showSection('train')">🚆 القطارات</button>
+    <button onclick="showSection('admin')">⚙️ لوحة التحكم</button>
+  </nav>
+
+  <!-- الأقسام -->
+  <section id="pharmacies"></section>
+  <section id="snacks"></section>
+  <section id="shops"></section>
+  <section id="doctors"></section>
+  <section id="transport"></section>
+  <section id="train"></section>
+
+  <!-- لوحة التحكم -->
+  <section id="admin" class="admin-panel">
+    <h2>لوحة التحكم</h2>
+    <div id="notifications"></div>
+    <select id="category">
+      <option value="pharmacies">صيدليات</option>
+      <option value="snacks">سناكات</option>
+      <option value="shops">محلات</option>
+      <option value="doctors">أطباء</option>
+      <option value="transport">نقل</option>
+      <option value="train">قطارات</option>
+    </select>
+    <input type="text" id="name" placeholder="الاسم"/>
+    <input type="text" id="address" placeholder="العنوان"/>
+    <input type="text" id="phone" placeholder="الهاتف"/>
+    <button onclick="addItem()">➕ إضافة</button>
+  </section>
+
+  <!-- Chatbot -->
+  <div class="chat-widget">
+    <div id="chat-messages"></div>
+    <input type="text" id="chat-input" placeholder="اكتب سؤالك..."/>
+    <button onclick="sendMessage()">إرسال</button>
+  </div>
+
+<script>
+  // البيانات الأولية
+  let data = JSON.parse(localStorage.getItem("cityData")) || {
+    pharmacies: [
+      {name:"صيدلية برشيد", address:"قرب المستشفى", phone:"0522334455"}
+    ],
+    snacks: [
+      {name:"سناك المذاق", address:"شارع محمد الخامس", phone:"0612345678"}
+    ],
+    shops: [
+      {name:"محل الأمل", address:"سوق برشيد", phone:"0600112233"}
+    ],
+    doctors: [
+      {name:"د. أحمد - طب عام", address:"قرب المحطة", phone:"0622334455"}
+    ],
+    transport: [
+      {name:"طاكسي كبير", address:"محطة الطاكسيات", phone:"0677889900"}
+    ],
+    train: [
+      {name:"محطة برشيد", address:"وسط المدينة", phone:"www.oncf.ma"}
+    ]
+  };
+
+  // عرض الأقسام
+  function showSection(id){
+    document.querySelectorAll("section").forEach(s=>s.classList.remove("active"));
+    document.getElementById(id).classList.add("active");
+    renderSection(id);
+  }
+
+  // طباعة البيانات
+  function renderSection(category){
+    let section=document.getElementById(category);
+    section.innerHTML="";
+    data[category].forEach((item,i)=>{
+      section.innerHTML+=`
+        <div class="card">
+          <h3>${item.name}</h3>
+          <p>📍 ${item.address}</p>
+          <p>📞 ${item.phone}</p>
+        </div>`;
+    });
+  }
+
+  // إضافة عنصر جديد
+  function addItem(){
+    let cat=document.getElementById("category").value;
+    let name=document.getElementById("name").value;
+    let address=document.getElementById("address").value;
+    let phone=document.getElementById("phone").value;
+    data[cat].push({name,address,phone});
+    localStorage.setItem("cityData",JSON.stringify(data));
+    document.getElementById("notifications").innerHTML=`<div class="notification">✔️ تمت الإضافة بنجاح</div>`;
+    renderSection(cat);
+  }
+
+  // Chatbot مع OpenAI
+  async function sendMessage(){
+    let input=document.getElementById("chat-input").value;
+    if(!input) return;
+    document.getElementById("chat-messages").innerHTML+=`<p><b>أنت:</b> ${input}</p>`;
+    document.getElementById("chat-input").value="";
+    try{
+      let res=await fetch("https://api.openai.com/v1/chat/completions",{
+        method:"POST",
+        headers:{
+          "Content-Type":"application/json",
+          "Authorization":"Bearer مفتاح_API_ديالك"
+        },
+        body:JSON.stringify({
+          model:"gpt-3.5-turbo",
+          messages:[{role:"user",content:input}]
+        })
+      });
+      let out=await res.json();
+      let reply=out.choices[0].message.content;
+      document.getElementById("chat-messages").innerHTML+=`<p><b>🤖:</b> ${reply}</p>`;
+    }catch(e){
+      document.getElementById("chat-messages").innerHTML+=`<p style="color:red;">خطأ: تحقق من API</p>`;
+    }
+  }
+
+  // البداية
+  showSection("pharmacies");
+</script>
+</body>
+</html>
